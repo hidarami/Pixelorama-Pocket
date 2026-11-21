@@ -45,7 +45,7 @@ jobs:
       - name: Android Build 🔧
         run: godot --headless -v --export-debug "Android" ./build/android/${EXPORT_NAME}.apk
       - name: Upload APK ⬆️
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.EXPORT_NAME }}-apk
           path: build/android/${{ env.EXPORT_NAME }}.apk
