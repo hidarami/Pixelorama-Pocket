@@ -1,0 +1,51 @@
+name: Android APK
+
+# Builds an installable (debug-signed) APK of Pixelorama with the touch layout.
+# Run it by hand from the "Actions" tab of your fork ("Run workflow"), or push to the
+# "mobile-ui" branch. The APK is attached to the run as an artifact.
+#
+# NOTE: this workflow follows the usual godot-ci recipe for Godot's Gradle based Android export,
+# but it could not be run when it was written. If a step fails, the log tells which one.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ mobile-ui ]
+
+env:
+  GODOT_VERSION: 4.7.1
+  EXPORT_NAME: Pixelorama-touch
+
+jobs:
+  export-android:
+    name: Android APK 🤖
+    runs-on: ubuntu-latest
+    container:
+      image: docker://barichello/godot-ci:4.7.1
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+      - name: Setup 💻
+        run: |
+          mkdir -v -p build/android ~/.local/share/godot/export_templates ~/.config
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable || true
+          # Keeps the Android SDK / keystore settings that the image prepared for the editor.
+          mv /root/.config/godot ~/.config/godot || true
+      - name: Install the Android build template 📦
+        run: |
+          mkdir -v -p android/build
+          unzip -q ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/android_source.zip -d android/build
+          touch android/build/.gdignore
+          echo "${GODOT_VERSION}.stable" > android/.build_version
+      - name: Import resources once 📦
+        continue-on-error: true
+        run: godot --headless -v --import
+      - name: Android Build 🔧
+        run: godot --headless -v --export-debug "Android" ./build/android/${EXPORT_NAME}.apk
+      - name: Upload APK ⬆️
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-apk
+          path: build/android/${{ env.EXPORT_NAME }}.apk
